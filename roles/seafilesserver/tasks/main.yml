@@ -1,0 +1,48 @@
+---
+
+- name: Install seafiles-server dependencies
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - python-setuptools
+    - python-pil
+    - sqlite3
+    - python-pexpect
+  become: True
+  become_method: sudo
+
+- name: Create seafiles Directory
+  file:
+    path: "{{ ansible_env.HOME }}/seafiles"
+    state: directory
+
+- name: Download seafiles-server
+  get_url:
+    url: https://download.seadrive.org/seafile-server_6.2.5_x86-64.tar.gz
+    dest: "{{ ansible_env.HOME }}/seafiles/seafile-server.tar.gz"
+
+- name: Unzip seafiles-server
+  unarchive:
+    src: "{{ ansible_env.HOME }}/seafiles/seafile-server.tar.gz"
+    dest: "{{ ansible_env.HOME }}/seafiles"
+    remote_src: True
+
+- name: Install seafiles-server
+  shell: "bash setup-seafile.sh auto"
+  args:
+    chdir: "{{ ansible_env.HOME }}/seafiles/seafile-server-6.2.5"
+
+- name: Run seafils server
+  command: ./seafile.sh start
+  args:
+    chdir: "{{ ansible_env.HOME }}/seafiles/seafile-server-6.2.5"
+
+- name: Configure admin
+  expect:
+    command: ./seahub.sh start
+    chdir: "{{ ansible_env.HOME }}/seafiles/seafile-server-6.2.5"
+    responses:
+      admin email: "{{ adminemail }}"
+      admin password: "{{ adminpasswd }}"
+
